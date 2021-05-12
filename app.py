@@ -1,21 +1,39 @@
 import json
 import os
 
-from db import db
-from db import User, Student, Tutor, Subject, TutorSession, Messages
+from db import DB
+from db import User, Student, Tutor, Subject, TutorSession, Messages, Invite
 from flask import Flask
 from flask import request
 
 app = Flask(__name__)
-db_filename = "tutors.db"
+DB_filename = "tutors.db"
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///%s" % db_filename
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///%s" % DB_filename
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ECHO"] = True
 
-db.init_app(app)
+DB.init_app(app)
 with app.app_context():
-    db.create_all()
+    DB.create_all()
+    if(Subject.query.filter_by(name="History").first() is None):
+        DB.session.add(Subject(name="History"))
+        DB.session.add(Subject(name="Math"))
+        DB.session.add(Subject(name="Computer Science"))
+        DB.session.add(Subject(name="Physics"))
+        DB.session.add(Subject(name="Chemistry"))
+        DB.session.commit()
+
+def get_user_by_email(email):
+    return User.query.filter(User.email == email).first()
+
+
+def get_user_by_session_token(session_token):
+    return User.query.filter(User.session_token == session_token).first()
+
+
+def get_user_by_update_token(update_token):
+    return User.query.filter(User.update_token == update_token).first()
 
 def missing_parameter_response(body, keys):
     error_output="Missing parameter(s): "
@@ -43,101 +61,214 @@ def get_students():
 def get_tutors():
     return success_response([t.serialize() for t in Tutor.query.all()])
 
+@app.route("/api/user/<int:user_id>/")
+def get_user_by_id(user_id):
+    user = User.query.filter_by(id=user_id).first()
+    if user is None:
+        return failure_response("Given user id is not associated with a user!")
+    return success_response(user.serialize())
+
+"""
 @app.route("/api/users/", methods=["POST"])
 def create_user():
     body = json.loads(request.data)
+    if body.get("netid") is None or body.get("name") is None or body.get("location") is None:
+        return failure_response(missing_parameter_response(body, ["netid", "name", "location"]))
     n = body.get('name')
     nid = body.get('netid')
     loc = body.get('location')
     new_user = User(name = n, netid = nid, location = loc)
-    db.session.add(new_user)
-    db.session.commit()
+    DB.session.add(new_user)
+    DB.session.commit()
     return success_response(new_user.serialize(), 201)
+"""
+
+@app.route("/api/user/<int:user_id>/tutor/", methods=["POST"])
+def add_tutor_to_user(user_id):
+    body = json.loads(request.data)
+    if body.get("description") is None:
+        return failure_response(missing_parameter_response(body, ["description"]))
+    user = User.query.filter_by(id=user_id).first()
+    if user is None:
+        return failure_response("Given user id is not associated with a user!")
+    desc = body.get("description")
+    rat = body.get("rating", 0)
+    new_tutor=Tutor(user_id = user_id, description = desc, rating= rat)
+    user.tutor.append(new_tutor)
+    DB.session.add(new_tutor)
+    DB.session.commit()
+    return success_response(new_tutor.serialize(),201)
+
+@app.route("/api/user/<int:user_id>/student/", methods=["POST"])
+def add_student_to_user(user_id):
+    body = json.loads(request.data)
+    if body.get("description") is None:
+        return failure_response(missing_parameter_response(body, ["description"]))
+    user = User.query.filter_by(id=user_id).first()
+    if user is None:
+        return failure_response("Given user id is not associated with a user!")
+    desc = body.get("description")
+    new_student=Student(user_id = user_id, description = desc)
+    user.student.append(new_student)
+    DB.session.add(new_student)
+    DB.session.commit()
+    return success_response(new_student.serialize(),201)
+
+@app.route("/api/user/<int:user_id>/subject/", methods=["POST"])
+def add_subject_to_user(user_id):
+    body = json.loads(request.data)
+    if body.get("name") is None: #or body.get("code") is None:
+        return failure_response(missing_parameter_response(body, ["name"]))#,"code"]))
+    user = User.query.filter_by(id=user_id).first()
+    if user is None:
+        return failure_response("Given user id is not associated with a user!")
+    name = body.get("name")
+    #code = body.get("code")
+    subject = Subject.query.filter_by(name=name).first()#,code=code).first()
+    if subject is None:
+        return failure_response("No subject found")
+    #Math, Science, English, History, Foreign Languages
+    if user.tutor is not None:
+        for t in user.tutor:
+            t.subjects.append(subject)
+    if user.student is not None:
+        for s in user.student:
+            s.subjects.append(subject)
+    DB.session.commit()
+    return success_response(subject.serialize())
+
+def get_subject_by_name(nme):
+    subject=Subject.query.filter_by(name=nme).first()
+    if(subject is None):
+        return None
+    return subject
+
+@app.route("/api/invite/", methods=["POST"])
+def create_invite():
+    body = json.loads(request.data)
+    if body.get("receiver_id") is None or body.get("subject_id") is None:
+        return failure_response(missing_parameter_response(body, ["receiver_id","subject_id"]))
+    receiver = User.query.filter_by(id=body.get("receiver_id")).first()
+    if receiver is None:
+        return failure_response("Receiver not found")
+
+    sender=get_logged_in_data()
+    if sender is None or type(sender)!=User:
+        return failure_response("Invalid session token")
+    if sender.id==receiver.id:
+        return failure_response("Can't send invite to yourself")
+    if receiver.tutor==[] or sender.student==[]:
+        return failure_response("Invalid user data")
+    tutor=None
+    student=None
+    for t in receiver.tutor:
+        tutor=t
+    for s in sender.student:
+        student=s
+    new_invite=Invite(receiver_id=tutor.id, sender_id=student.id, subject_id=body.get("subject_id"))
+    DB.session.add(new_invite)
+    DB.session.commit()
+    return success_response(new_invite.serialize())
+
+@app.route("/api/invite/<int:invite_id>/")
+def accept_invite(invite_id):
+    invite = Invite.query.filter_by(id=invite_id).first()
+    if invite is None:
+        return failure_response("Invite not found")
+    if invite.accepted:
+        return failure_response("Invite already accepted")
+    user=get_logged_in_data()
+    if user is None or type(user)!=User:
+        return failure_response("Invalid session token")
+    new_session = invite.create_session(user)
+    if new_session is None:
+        return failure_response("Authentification mismatch")
+    return success_response(new_session.rserialize())
+
+def extract_token(request):
+    auth_header = request.headers.get("Authorization")
+    if auth_header is None:
+        return False, json.dumps({"error":"Missing auth header"})
+
+    bearer_token = auth_header.replace("Bearer ","").strip()
+
+    if bearer_token is None or not bearer_token:
+        return False, json.dumps({"error":"Missing auth header"})
+
+    return True, bearer_token
+
+@app.route("/api/register/", methods=["POST"])
+def register_account():
+    body = json.loads(request.data)
+
+    if body.get("netid") is None or body.get("name") is None or body.get("location") is None or body.get("email") is None or body.get("password") is None:
+        return failure_response(missing_parameter_response(body, ["netid", "name", "location" ,"email", "password"]))
+    email = body.get("email")
+    password = body.get("password")
+    n = body.get('name')
+    nid = body.get('netid')
+    loc = body.get('location')
+
+
+    optional_user = get_user_by_email(email)
+
+    if optional_user is not None:
+        return json.dumps({"error": "User already exists"})
+
+    user = User(email=email, password=password,name = n, netid = nid, location = loc)
+
+    DB.session.add(user)
+    DB.session.commit()
+
+    return success_response(user.serialize(), 201)
+
+@app.route("/api/login/", methods=["POST"])
+def login():
+    body = json.loads(request.data)
+    email = body.get("email")
+    password = body.get("password")
+
+    if email is None or password is None:
+        return failure_response("Invalid email or password")
+
+    user = get_user_by_email(email)
+
+    success= user is not None and user.verify_password(password)
+    if not success:
+        return failure_response("Invalid email or password")
+    return success_response(user.serialize(), 201)
+
+
+@app.route("/api/session/", methods=["POST"])
+def update_session():
+    success, update_token = extract_token(request)
+
+    if not success:
+        return update_token
+
+    user = get_user_by_update_token(update_token)
+
+    if user is None:
+        return failure_response(f"Invalid update token: {update_token}")
+
+    user.renew_session()
+    DB.session.commit()
+
+    return success_response(user.serialize(), 201)
+
+
+
+def get_logged_in_data():
+    success, session_token = extract_token(request)
+
+    if not success:
+        return session_token
+
+    user = get_user_by_session_token(session_token)
+    if not user or not user.verify_session_token(session_token):
+        return None
+    return user
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
-
-"""
-@app.route("/tasks/")
-def get_tasks():
-    return success_response([t.serialize() for t in Task.query.all()])
-
-@app.route("/subtasks/")
-def get_subtasks():
-    return success_response([s.serialize() for s in Subtask.query.all()])
-
-@app.route("/categories/")
-def get_categories():
-    return success_response([c.serialize() for c in Category.query.all()])
-
-@app.route("/tasks/", methods=["POST"])
-def create_task():
-    body = json.loads(request.data)
-    new_task = Task(description = body.get('description', ''), done = body.get('done', False))
-    db.session.add(new_task)
-    db.session.commit()
-    return success_response(new_task.serialize(), 201)
-
-@app.route("/tasks/<int:task_id>/")
-def get_task(task_id):
-    task = Task.query.filter_by(id=task_id).first() #first only grabs first row, SQL doesn't know it's signualr row
-    if task is None:
-        return failure_response('Task not found')
-    return success_response(task.serialize)
-
-@app.route("/tasks/<int:task_id>/", methods = ["POST"])
-def update_task(task_id):
-    task = Task.query.filter_by(id=task_id).first()
-    if task is None:
-        return failure_response('Task not found')
-    body = json.loads(request.data)
-    task.description = body.get('description', task.description)
-    task.done = body.get('done', task.done)
-    db.session.commit()
-    return success_response(task.serialize())
-
-@app.route("/tasks/<int:task_id>/", methods = ["DELETE"])
-def delete_task(task_id):
-    task = Task.query.filter_by(id=task_id).first()
-    if task is None:
-        return failure_response('Task not found')
-    db.session.delete(task)
-    db.session.commit()
-    return success_response(task.serialize())
-
-@app.route("/tasks/<int:task_id>/subtasks/", methods = ["POST"])
-def create_subtask(task_id):
-    task = Task.query.filter_by(id=task_id).first()
-    if task is None:
-        return failure_response('Task not found')
-    body = json.loads(request.data)
-    new_subtask = Subtask(
-        description = body.get('description', ''),
-        done = body.get('done', False),
-        task_id = task_id
-    )
-    db.session.add(new_subtask)
-    db.session.commit()
-    return success_response(new_subtask.serialize())
-
-@app.route("/tasks/<int:task_id>/category/", methods = ["POST"])
-def assign_category(task_id):
-    task = Task.query.filter_by(id=task_id).first()
-    if task is None:
-        return failure_response('Task not found')
-    body = json.loads(request.data)
-    description = body.get('description')
-    if description is None:
-        return failure_response("No description")
-    category = Category.query.filter_by(description = description).first()
-    if category is None:
-        category = Category(
-            description = description,
-            color = body.get('color', 'purple')
-        )
-    task.categories.append(category)
-    db.session.commit()
-    return success_response(task.serialize())
-
-
-"""
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)

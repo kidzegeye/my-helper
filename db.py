@@ -1,118 +1,199 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
-db = SQLAlchemy()
+import datetime
+import hashlib
+import os
+import bcrypt
 
+DB = SQLAlchemy()
+
+def get_subject_by_name(nme):
+        subject=Subject.query.filter_by(name=nme).first()
+        if(subject is None):
+            return None
+        return subject
 #your classes here
-subjects_association = db.Table(
-    'subjects',
-    db.Column('subject_id', db.Integer, db.ForeignKey('subject.id')),
-    db.Column('student_id', db.Integer, db.ForeignKey('student.id')),
-    db.Column('tutor_id', db.Integer, db.ForeignKey('tutor.id'))
+subjects_association = DB.Table(
+    'subjects_association',
+    DB.Column('subject_id', DB.Integer, DB.ForeignKey('subject.id')),
+    DB.Column('student_id', DB.Integer, DB.ForeignKey('student.id')),
+    DB.Column('tutor_id', DB.Integer, DB.ForeignKey('tutor.id'))
 )
 
-class User(db.Model):
+
+class User(DB.Model):
     __tablename__ = "user"
-    id = db.Column(db.Integer, primary_key = True)
-    name = db.Column(db.String, nullable = False)
-    netid = db.Column(db.String, nullable = False)
-    location = db.Column(db.String, nullable = False)
-    student = db.relationship('Student', uselist=False,cascade='delete')
-    tutor = db.relationship('Tutor', uselist=False,cascade='delete')
-    messages = db.relationship("Messages")
+    id = DB.Column(DB.Integer, primary_key = True)
+    name = DB.Column(DB.String, nullable = False)
+    netid = DB.Column(DB.String, nullable = False)
+    location = DB.Column(DB.String, nullable = False)
+
+    email = DB.Column(DB.String, nullable=False, unique=True)
+    password_digest = DB.Column(DB.String, nullable=False)
+    session_token = DB.Column(DB.String, nullable=False, unique=True)
+    session_expiration = DB.Column(DB.DateTime, nullable=False)
+    update_token = DB.Column(DB.String, nullable=False, unique=True)
+
+    student = DB.relationship('Student', back_populates = "user", cascade='delete')
+    tutor = DB.relationship('Tutor', back_populates = "user", cascade='delete')
+    messages = DB.relationship("Messages", back_populates = "user")
+
 
     def __init__(self, **kwargs):
         self.name = kwargs.get('name')
         self.netid = kwargs.get('netid')
         self.location = kwargs.get('location')
+        self.email=kwargs.get("email")
+        self.password_digest = bcrypt.hashpw(kwargs.get("password").encode("utf8"), bcrypt.gensalt(rounds=13))
+        self.renew_session()
 
     def serialize(self):
         return {
             "id":self.id,
             "netid":self.netid,
             "name":self.name,
+            "email":self.email,
             "location":self.location,
-            "tutor": [self.tutor.serialize() if (self.tutor is not None) else ""],
-            "student": [self.student.serialize() if (self.student is not None) else ""]
+            "tutor": [t.rserialize() for t in self.tutor],
+            "student": [s.rserialize() for s in self.student],
+            "session_token":self.session_token,
+            "session_expiration": str(self.session_expiration),
+            "update_token": self.update_token,
         }
-    #password,phone,email
+    def rserialize(self):
+        return {
+            "id":self.id,
+            "netid":self.netid,
+            "email":self.email,
+            "name":self.name,
+            "location":self.location
+        }
 
-class Tutor(db.Model):
+    def _urlsafe_base_64(self):
+        return hashlib.sha1(os.urandom(64)).hexdigest()
+
+    def renew_session(self):
+        self.session_token = self._urlsafe_base_64()
+        self.session_expiration = datetime.datetime.now() + datetime.timedelta(days=1)
+        self.update_token = self._urlsafe_base_64()
+
+    def verify_password(self, password):
+        return bcrypt.checkpw(password.encode("utf8"), self.password_digest)
+
+    def verify_session_token(self, session_token):
+        return session_token == self.session_token and datetime.datetime.now() < self.session_expiration
+
+    def verify_update_token(self, update_token):
+        return update_token == self.update_token
+
+
+
+class Tutor(DB.Model):
     __tablename__ = "tutor"
-    id = db.Column(db.Integer, primary_key = True)
-    user = db.relationship('User', uselist=False,cascade='delete')
-    user_id= db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
-    subjects = db.relationship('Subject', secondary = subjects_association, back_populates = 'tutor')
-    rating = db.Column(db.Integer, nullable= True)
-    description= db.Column(db.String,nullable=False)
-    session = db.relationship("TutorSession",cascade='delete')
+    id = DB.Column(DB.Integer, primary_key = True)
+    user = DB.relationship('User', back_populates = "tutor", cascade='delete')
+    user_id= DB.Column(DB.Integer, DB.ForeignKey('user.id'),nullable=False)
+    subjects = DB.relationship('Subject', secondary = subjects_association, back_populates = 'tutor')
+    rating = DB.Column(DB.Integer, nullable= True)
+    description= DB.Column(DB.String,nullable=False)
+    sessions = DB.relationship("TutorSession", back_populates = "tutor", cascade='delete')
+    invites=DB.relationship("Invite",back_populates="receiver", cascade="delete")
 
     def __init__(self, **kwargs):
+        self.user_id = kwargs.get('user_id')
+        self.description = kwargs.get('description')
+        self.rating=kwargs.get("rating")
+
+    def serialize(self):
+        return{
+            "id":self.id,
+            "rating":self.rating if (self.rating is not None) else 0,
+            "description":self.description,
+            "sessions":[a.rserialize() for a in self.sessions],
+            "subjects":[s.serialize() for s in self.subjects],
+            "user": self.user.rserialize(),
+            "invites":[i.serialize() for i in self.invites]
+        }
+    def rserialize(self):
+        return{
+            "id":self.id,
+            "rating":self.rating if (self.rating is not None) else 0,
+            "description":self.description,
+            "sessions":[a.rserialize() for a in self.sessions],
+            "subjects":[s.serialize() for s in self.subjects],
+        }
+
+class Student(DB.Model):
+    __tablename__ = "student"
+    id = DB.Column(DB.Integer, primary_key = True)
+    user = DB.relationship("User", back_populates = "student", cascade='delete')
+    user_id= DB.Column(DB.Integer, DB.ForeignKey('user.id'),nullable=False)
+    subjects = DB.relationship("Subject", secondary= subjects_association, back_populates="student")
+    description = DB.Column(DB.String, nullable=False)
+    sessions = DB.relationship("TutorSession",back_populates = "student", cascade='delete')
+    invites=DB.relationship("Invite",back_populates="sender", cascade="delete")
+
+    def __init__(self, **kwargs):
+        self.user_id = kwargs.get('user_id')
         self.description = kwargs.get('description')
 
     def serialize(self):
         return {
             "id":self.id,
-            "rating":self.rating if (self.rating is not None) else 0,
             "description":self.description,
-            "sessions":[a.rserialize() for a in self.session],
-            "subjects":[s.serialize() for s in self.subjects]
+            "sessions":[a.rserialize() for a in self.sessions],
+            "subjects":[s.serialize() for s in self.subjects],
+            "user": self.user.rserialize(),
+            "invites_sent":[i.serialize() for i in self.invites]
+
         }
 
-class Student(db.Model):
-    __tablename__ = "student"
-    id = db.Column(db.Integer, primary_key = True)
-    user = db.relationship("User", uselist=False,cascade='delete')
-    user_id= db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
-    subjects = db.relationship("Subject", secondary= subjects_association, back_populates="student")
-    description = db.Column(db.String,nullable=False)
-    session = db.relationship("TutorSession",cascade='delete')
-
-    def __init__(self, **kwargs):
-        self.code = kwargs.get('code')
-        self.name = kwargs.get('name')
-
-    def serialize(self):
+    def rserialize(self):
         return {
             "id":self.id,
             "description":self.description,
-            "sessions":[a.rserialize() for a in self.session],
-            "subjects":[s.serialize() for s in self.subjects]
+            "sessions":[a.rserialize() for a in self.sessions],
+            "subjects":[s.serialize() for s in self.subjects],
         }
 
-class Subject(db.Model):
+class Subject(DB.Model):
     __tablename__ = "subject"
-    id = db.Column(db.Integer, primary_key = True)
-    name = db.Column(db.String, nullable = False)
-    code = db.Column(db.String, nullable = False)
-    student = db.relationship('Student', secondary = subjects_association, back_populates = 'subjects')
-    student_id= db.Column(db.Integer, db.ForeignKey('student.id'),nullable=False)
-    tutor = db.relationship('Tutor', secondary = subjects_association, back_populates = 'subjects')
-    tutor_id= db.Column(db.Integer, db.ForeignKey('tutor.id'),nullable=False)
+    id = DB.Column(DB.Integer, primary_key = True)
+    name = DB.Column(DB.String, nullable = False)
+    #code = DB.Column(DB.String, nullable = False)
+    student = DB.relationship('Student', secondary = subjects_association, back_populates = 'subjects')
+    tutor = DB.relationship('Tutor', secondary = subjects_association, back_populates = 'subjects')
+    sessions = DB.relationship('TutorSession', back_populates = "subject")
+    
 
 
     def __init__(self, **kwargs):
-        self.code = kwargs.get('code')
+        #self.code = kwargs.get('code')
         self.name = kwargs.get('name')
 
     def serialize(self):
         return {
             "id":self.id,
-            "code":self.code,
+            #"code":self.code,
             "name":self.name
         }
 
 
-class TutorSession(db.Model):
+class TutorSession(DB.Model):
     __tablename__ = "tutor_session"
-    id = db.Column(db.Integer, primary_key = True)
-    student = db.relationship('Student', uselist=False)
-    student_id= db.Column(db.Integer, db.ForeignKey('student.id'),nullable=False)
-    tutor = db.relationship('Tutor', uselist=False,)
-    tutor_id= db.Column(db.Integer, db.ForeignKey('tutor.id'), nullable=False)
-    messages = db.relationship('Messages', cascade = 'delete')
-    subject = db.relationship('Subject', uselist=False)
-    subject_id= db.Column(db.Integer, db.ForeignKey('subject.id'),nullable=False)
-    timestamp = db.Column(db.DateTime,default=datetime.utcnow)
+    id = DB.Column(DB.Integer, primary_key = True)
+    student = DB.relationship('Student', back_populates = "sessions")
+    student_id= DB.Column(DB.Integer, DB.ForeignKey('student.id'),nullable=False)
+    tutor = DB.relationship('Tutor', back_populates = "sessions")
+    tutor_id= DB.Column(DB.Integer, DB.ForeignKey('tutor.id'), nullable=False)
+    messages = DB.relationship('Messages', back_populates = "session", cascade = 'delete')
+    subject = DB.relationship('Subject', back_populates = "sessions")
+    subject_id= DB.Column(DB.Integer, DB.ForeignKey('subject.id'),nullable=False)
+    timestamp = DB.Column(DB.DateTime,default=datetime.datetime.now())
+
+    def __init__(self, **kwargs):
+        self.student_id = kwargs.get('student_id')
+        self.tutor_id = kwargs.get('tutor_id')
+        self.subject_id=kwargs.get("subject_id")
 
     def serialize(self):
         return {
@@ -120,26 +201,27 @@ class TutorSession(db.Model):
             "student":[self.student.serialize()],
             "tutor":[self.tutor.serialize()],
             "subject": [self.subject.serialize()],
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp.strftime("%D %T")
         }
 
     def rserialize(self):
         return {
             "id":self.id,
-            "studentid":[self.student.id],
-            "tutorid":[self.tutor.id],
+            "student_id":self.student_id,
+            "tutor_id":self.tutor_id,
             "subject": [self.subject.serialize()],
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp.strftime("%D %T")
         }
 
-class Messages(db.Model):
+class Messages(DB.Model):
     __tablename__ = "messages"
-    id = db.Column(db.Integer, primary_key = True)
-    session = db.relationship("TutorSession",uselist = False)
-    session_id= db.Column(db.Integer, db.ForeignKey('tutor_session.id'),nullable=False)
-    user= db.relationship("User", uselist=False)
-    user_id= db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
-    message=db.Column(db.String, nullable=False)
+    id = DB.Column(DB.Integer, primary_key = True)
+    message=DB.Column(DB.String, nullable=False)
+
+    session = DB.relationship("TutorSession", back_populates = "messages")
+    session_id= DB.Column(DB.Integer, DB.ForeignKey('tutor_session.id'),nullable=False)
+    user= DB.relationship("User", back_populates = "messages")
+    user_id= DB.Column(DB.Integer, DB.ForeignKey('user.id'),nullable=False)
 
     def __init__(self, **kwargs):
         self.message = kwargs.get('message')
@@ -152,193 +234,54 @@ class Messages(db.Model):
             "message":self.message
         }
 
+class Invite(DB.Model):
+    __tablename__ = "invites"
+    id=DB.Column(DB.Integer, primary_key=True)
+    
+    sender_id=DB.Column(DB.Integer,DB.ForeignKey('student.id'),nullable=False)
+    sender=DB.relationship("Student", back_populates = "invites")
 
+    
+    receiver_id=DB.Column(DB.Integer,DB.ForeignKey('tutor.id'),nullable=False)
+    receiver=DB.relationship("Tutor", back_populates = "invites")
 
-
-"""
-association_table = db.Table(
-    'association',
-    db.Column('course_id', db.Integer, db.ForeignKey('course.id')),
-    db.Column('student_id', db.Integer, db.ForeignKey('student.id')),
-    db.Column('instructor_id', db.Integer, db.ForeignKey('instructor.id'))
-)
-
-class Course(db.Model):
-    __tablename__ = "course"
-    id = db.Column(db.Integer, primary_key = True)
-    code = db.Column(db.String, nullable = False)
-    name = db.Column(db.String, nullable = False)
-    assignments = db.relationship('Assignment', cascade = 'delete')
-    students = db.relationship('Student', secondary = association_table, back_populates = 'courses')
-    instructors = db.relationship('Instructor', secondary = association_table, back_populates = 'courses')
+    subject = DB.relationship('Subject')
+    subject_id= DB.Column(DB.Integer, DB.ForeignKey('subject.id'),nullable=False)
+    
+    accepted=DB.Column(DB.Boolean, default=False)
 
     def __init__(self, **kwargs):
-        self.code = kwargs.get('code')
-        self.name = kwargs.get('name')
+        self.sender_id=kwargs.get("sender_id")
+        self.receiver_id=kwargs.get("receiver_id")
+        self.subject_id=kwargs.get("subject_id")
 
     def serialize(self):
         return {
             "id":self.id,
-            "code":self.code,
-            "name":self.name,
-            "assignments":[a.serialize() for a in self.assignments],
-            "users":[u.rSerialize() for u in (self.students + self.instructors)]
+            "sender":[self.sender.rserialize()],
+            "receiver":[self.receiver.rserialize()],
+            "subject": [self.subject.serialize()],
+            "accepted": self.accepted
         }
 
-    def rSerialize(self):
+    def rserialize(self):
         return {
             "id":self.id,
-            "code":self.code,
-            "name":self.name
+            "sender_tid":self.sender_id.user_id,
+            "receiver":self.receiver_id.user_id,
+            "subject": self.subject.name,
+            "accepted": self.accepted
         }
+    def create_session(self,receiver):
+        if receiver.email!=self.receiver.user.email:
+            return None
+        tutor = self.receiver
+        student = self.sender
 
-    def cSerialize(self):
-        return {
-            "id":self.id,
-            "code":self.code,
-            "name":self.name,
-            "assignments":[a.serialize() for a in self.assignments],
-            "students":[s.rSerialize() for s in self.students],
-            "instructors":[i.rSerialize() for i in self.instructors]
-        }
-
-
-class Assignment(db.Model):
-    __tablename__ = "assignment"
-    id = db.Column(db.Integer, primary_key = True)
-    title = db.Column(db.String, nullable = False)
-    due_date = db.Column(db.Integer, nullable = False)
-    course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
-
-    def __init__(self, **kwargs):
-        self.title = kwargs.get('title')
-        self.due_date = kwargs.get('due_date')
-        self.course_id = kwargs.get('course_id')
-
-    def serialize(self):
-        return {
-            "id":self.id,
-            "title":self.title,
-            "due_date":self.due_date
-        }
+        new_session = TutorSession(student_id=student.id,tutor_id=tutor.id,subject_id=self.subject.id, accepted=True)
+        DB.session.add(new_session)
+        DB.session.commit()
+        return new_session
 
 
-class Student(db.Model):
-    __tablename__ = "student"
-    id = db.Column(db.Integer, primary_key = True)
-    name = db.Column(db.String, nullable = False)
-    netid = db.Column(db.String, nullable = False)
-    courses = db.relationship('Course', secondary = association_table, back_populates = 'students')
-
-    def __init__(self, **kwargs):
-        self.name = kwargs.get('name')
-        self.netid = kwargs.get('netid')
-
-    def serialize(self):
-        return{
-            "id":self.id,
-            "name":self.name,
-            "netid":self.netid,
-            "courses":[c.serialize() for c in self.courses]
-        }
-
-    def rSerialize(self):
-        return{
-            "id":self.id,
-            "name":self.name,
-            "netid":self.netid,
-        }
-
-class Instructor(db.Model):
-    __tablename__ = "instructor"
-    id = db.Column(db.Integer, primary_key = True)
-    name = db.Column(db.String, nullable = False)
-    netid = db.Column(db.String, nullable = False)
-    courses = db.relationship('Course', secondary = association_table, back_populates = 'instructors')
-
-    def __init__(self, **kwargs):
-        self.name = kwargs.get('name')
-        self.netid = kwargs.get('netid')
-
-    def serialize(self):
-        return{
-            "id":self.id,
-            "name":self.name,
-            "netid":self.netid,
-            "courses":[c.serialize() for c in self.courses]
-        }
-
-    def rSerialize(self):
-        return{
-            "id":self.id,
-            "name":self.name,
-            "netid":self.netid,
-        }
-"""
-
-"""
-
-#inherit from db.Model
-#model for main information, table for all else
-class Task(db.Model):
-    __tablename__ = 'task'
-    id = db.Column(db.Integer, primary_key=True)
-    description = db.Column(db.String, nullable = False)
-    done = db.Column(db.Boolean, nullable = False)
-    subtasks = db.relationship('Subtask', cascade='delete')
-    #in this case reference class name
-    #cascade: if you delete task, also delete all of the subtasks as well
-    categories = db.relationship('Category', secondary=association_table, back_populates = 'tasks')
-
-    #**kwargs enables dictionary as argument
-    def __init__(self, **kwargs):
-        self.description = kwargs.get('description')
-        self.done = kwargs.get('done')
-
-    def serialize(self):
-        return{
-            'id': self.id,
-            'description':self.description,
-            'done':self.done,
-            'subtasks':[s.serialize() for s in self.subtasks],
-            'categories':[c.serialize() for c in self.categories]
-        }
-
-class Subtask(db.Model):
-    __tablename__ = 'subtask'
-    id = db.Column(db.Integer, primary_key=True)
-    description = db.Column(db.String, nullable = False)
-    done = db.Column(db.Boolean, nullable = False)
-    task_id = db.Column(db.Integer, db.ForeignKey('task.id'))
-
-    def __init__(self, **kwargs):
-        self.description = kwargs.get('description')
-        self.done = kwargs.get('done')
-        self.task_id = kwargs.get('task_id')
-
-    def serialize(self):
-        return{
-            'id':self.id,
-            'description':self.description,
-            'done':self.done
-        }
-
-class Category(db.Model):
-    __tablename__ = 'category'
-    id = db.Column(db.Integer, primary_key = True)
-    description = db.Column(db.String, nullable = False)
-    color = db.Column(db.String, nullable= False)
-    tasks = db.relationship('Task', secondary = association_table, back_populates = 'categories')
-
-    def __init__(self, **kwargs):
-        self.description = kwargs.get('description')
-        self.color = kwargs.get('color')
-
-    def serialize(self):
-        return{
-            'id':self.id,
-            'description':self.description,
-            'color':self.color
-
-        }
-"""
+    

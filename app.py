@@ -190,12 +190,12 @@ def accept_invite(invite_id):
 def extract_token(request):
     auth_header = request.headers.get("Authorization")
     if auth_header is None:
-        return False, json.dumps({"error":"Missing auth header"})
+        return failure_response("Missing auth header")
 
     bearer_token = auth_header.replace("Bearer ","").strip()
 
     if bearer_token is None or not bearer_token:
-        return False, json.dumps({"error":"Missing auth header"})
+        return failure_response("Missing auth header")
 
     return True, bearer_token
 
@@ -215,7 +215,7 @@ def register_account():
     optional_user = get_user_by_email(email)
 
     if optional_user is not None:
-        return json.dumps({"error": "User already exists"})
+        return failure_response("User already exists")
 
     user = User(email=email, password=password,name = n, netid = nid, location = loc)
 

@@ -49,6 +49,8 @@ def failure_response(message, code=404):
     return json.dumps({"success":False, "error":message}), code
 
 
+@app.route("/")
+@app.route("/api/")
 @app.route("/api/users/")
 def get_users():
     return success_response([u.serialize() for u in User.query.all()])

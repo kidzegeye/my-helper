@@ -271,29 +271,11 @@ class Invite(DB.Model):
     def rserialize(self):
         return {
             "id":self.id,
-<<<<<<< HEAD
-            "sender_id":self.sender.user_id,
-            "receiver_id":self.receiver.user_id,
-            "subject_id": self.subject_id,
-            "accepted": self.accepted
-        }
-    
-    def getinvites_serialize(self):
-        return {
-            "id":self.id,
-            "sender":[self.sender.user.rserialize()],
-            "receiver":[self.receiver.user.rserialize()],
-            "subject_id": self.subject_id,
-            "accepted": self.accepted
-        }
-
-=======
             "sender_tid":self.sender_id.user_id,
             "receiver":self.receiver_id.user_id,
             "subject": self.subject.name,
             "accepted": self.accepted
         }
->>>>>>> parent of 765a65a (Fixed create and accept invites, added get_invites_by_id)
     def create_session(self,receiver):
         if receiver.email!=self.receiver.user.email:
             return None

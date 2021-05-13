@@ -70,7 +70,7 @@ def get_user_by_id(user_id):
         return failure_response("Given user id is not associated with a user!")
     return success_response(user.serialize())
 
-@app.route("/api/user/<int:user_id>/invites/")
+@app.route("/api/user/invites/<int:user_id>/")
 def get_invites_by_id(user_id):
     user = User.query.filter_by(id=user_id).first()
     if user is None:

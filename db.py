@@ -65,7 +65,9 @@ class User(DB.Model):
             "netid":self.netid,
             "email":self.email,
             "name":self.name,
-            "location":self.location
+            "location":self.location,
+            "tutor": [t.rserialize() for t in self.tutor],
+            "student": [s.rserialize() for s in self.student],
         }
 
     def _urlsafe_base_64(self):
@@ -120,6 +122,7 @@ class Tutor(DB.Model):
             "description":self.description,
             "sessions":[a.rserialize() for a in self.sessions],
             "subjects":[s.serialize() for s in self.subjects],
+            "invites":[i.rserialize() for i in self.invites]
         }
 
 class Student(DB.Model):

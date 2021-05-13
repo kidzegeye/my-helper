@@ -245,21 +245,18 @@
 ```
   
 ##### Accept an invite to a tutoring session:  
-###### /api/invite/<int:invite_id>/  
-###### Body:  
-```
-{
-  
-}
-```
+###### /api/invite/<int:invite_id>/
 ###### Return:  
 ```
 {
-    "id":self.id,
-    "sender_tid":self.sender_id.user_id,
-    "receiver":self.receiver_id.user_id,
-    "subject": self.subject.name,
-    "accepted": self.accepted
+    "success": <route success>,
+    "data":{
+          "id":<tutor_session id>,
+          "student_id":<student id>,
+          "tutor_id":<tutor id>,
+          "subject": [subject for tutor session],
+          "timestamp": <session time>
+    }
 }
 ```
      

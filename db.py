@@ -272,7 +272,7 @@ class Invite(DB.Model):
             "id":self.id,
             "sender_id":self.sender.user_id,
             "receiver_id":self.receiver.user_id,
-            "subject": self.subject.name,
+            "subject": [self.subject.serialize()],
             "accepted": self.accepted
         }
     

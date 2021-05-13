@@ -145,8 +145,7 @@ class Student(DB.Model):
             "description":self.description,
             "sessions":[a.rserialize() for a in self.sessions],
             "subjects":[s.serialize() for s in self.subjects],
-            "user": self.user.rserialize(),
-            "invites_sent":[i.serialize() for i in self.invites]
+            "user": self.user.rserialize()
 
         }
 
@@ -261,7 +260,7 @@ class Invite(DB.Model):
     def serialize(self):
         return {
             "id":self.id,
-            "sender":[self.sender.rserialize()],
+            "sender":[self.sender.serialize()],
             "receiver":[self.receiver.rserialize()],
             "subject": [self.subject.serialize()],
             "accepted": self.accepted
@@ -270,18 +269,28 @@ class Invite(DB.Model):
     def rserialize(self):
         return {
             "id":self.id,
-            "sender_tid":self.sender_id.user_id,
-            "receiver":self.receiver_id.user_id,
+            "sender_id":self.sender.user_id,
+            "receiver_id":self.receiver.user_id,
             "subject": self.subject.name,
             "accepted": self.accepted
         }
+    
+    def getinvites_serialize(self):
+        return {
+            "id":self.id,
+            "sender":[self.sender.rserialize()],
+            "receiver":[self.receiver.rserialize()],
+            "subject": [self.subject.serialize()],
+            "accepted": self.accepted
+        }
+
     def create_session(self,receiver):
         if receiver.email!=self.receiver.user.email:
             return None
         tutor = self.receiver
         student = self.sender
 
-        new_session = TutorSession(student_id=student.id,tutor_id=tutor.id,subject_id=self.subject.id, accepted=True)
+        new_session = TutorSession(student_id=student.id,tutor_id=tutor.id,subject_id=self.subject.id)
         DB.session.add(new_session)
         DB.session.commit()
         return new_session

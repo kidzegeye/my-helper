@@ -277,7 +277,8 @@ Heroku Server: https://my-helper-appdev.herokuapp.com/
 ```
 {
    "receiver_id":<user id of receiver>,
-   "subject_id":<subject to receive tutoring in>
+   "subject_id":<subject to receive tutoring in>,
+   "session":<token of user>
 }
 ```
 ###### Return:  
@@ -296,7 +297,13 @@ Heroku Server: https://my-helper-appdev.herokuapp.com/
   
 ##### Accept an invite to a tutoring session:  
 ###### /api/invite/<int:invite_id>/
-###### Return:  
+###### Body:  
+```
+{
+   "session":<token of user>
+}
+```
+###### Return:
 ```
 {
     "success": <route success>,

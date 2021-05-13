@@ -188,16 +188,11 @@ def accept_invite(invite_id):
     return success_response(new_session.rserialize())
 
 def extract_token(request):
-    auth_header = request.headers.get("Authorization")
-    if auth_header is None:
+    session_token = request.data.get("session")
+    if session_token is None:
         return failure_response("Missing auth header")
 
-    bearer_token = auth_header.replace("Bearer ","").strip()
-
-    if bearer_token is None or not bearer_token:
-        return failure_response("Missing auth header")
-
-    return True, bearer_token
+    return True, session_token
 
 @app.route("/api/register/", methods=["POST"])
 def register_account():

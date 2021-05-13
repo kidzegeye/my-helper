@@ -6,13 +6,23 @@ https://github.com/KennyLiang2302/MyHelper.git
 
 ## App Description:
 
+## Backend Requirements:
+We have 7 different tables along with 1 association table. The majority of these tables have relations
+with one another, including one-to-one, one-to-many, and many-to-many. Moreover, we have 11 different
+working routes and have sent our code to a heroku server.
+
+Heroku Server: https://my-helper-appdev.herokuapp.com/
+
 ## API Specification:  
   
 ### Tables:  
 The tables in our database include User, Student, Tutor, Subject, TutorSession, Messages, and Invite.
 Moreover, there is an association table called subjects association.
 
-### Routes:  
+### Routes: 
+#### Heroku Server:
+Heroku Server: https://my-helper-appdev.herokuapp.com/
+
 #### GET methods:  
   
 ##### Get all users:  

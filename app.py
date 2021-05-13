@@ -77,10 +77,23 @@ def get_invites_by_id(user_id):
         return failure_response("Given user id is not associated with a user!")
     if user.tutor == []:
         return failure_response("Given user id is not a tutor")
-    for t in user.tutor:
-        tutor=t
-    return success_response([i.getinvites_serialize() for i in tutor.invites])
+    
+    return success_response([i.serialize() for i in user.tutor.invites])
 
+"""
+@app.route("/api/users/", methods=["POST"])
+def create_user():
+    body = json.loads(request.data)
+    if body.get("netid") is None or body.get("name") is None or body.get("location") is None:
+        return failure_response(missing_parameter_response(body, ["netid", "name", "location"]))
+    n = body.get('name')
+    nid = body.get('netid')
+    loc = body.get('location')
+    new_user = User(name = n, netid = nid, location = loc)
+    DB.session.add(new_user)
+    DB.session.commit()
+    return success_response(new_user.serialize(), 201)
+"""
 
 @app.route("/api/user/<int:user_id>/tutor/", methods=["POST"])
 def add_tutor_to_user(user_id):
@@ -90,8 +103,6 @@ def add_tutor_to_user(user_id):
     user = User.query.filter_by(id=user_id).first()
     if user is None:
         return failure_response("Given user id is not associated with a user!")
-    if user.tutor!=[]:
-        return failure_response("Given user already a tutor")
     desc = body.get("description")
     rat = body.get("rating", 0)
     new_tutor=Tutor(user_id = user_id, description = desc, rating= rat)
@@ -108,8 +119,6 @@ def add_student_to_user(user_id):
     user = User.query.filter_by(id=user_id).first()
     if user is None:
         return failure_response("Given user id is not associated with a user!")
-    if user.student!=[]:
-        return failure_response("Given user already a student")
     desc = body.get("description")
     new_student=Student(user_id = user_id, description = desc)
     user.student.append(new_student)
@@ -156,7 +165,7 @@ def create_invite():
         return failure_response("Receiver not found")
 
     sender=get_logged_in_data(request)
-    if sender is None or type(sender)==str:
+    if sender is None or type(sender)!=User:
         return failure_response("Invalid session token")
     if sender.id==receiver.id:
         return failure_response("Can't send invite to yourself")
@@ -173,7 +182,7 @@ def create_invite():
     DB.session.commit()
     return success_response(new_invite.serialize())
 
-@app.route("/api/invite/<int:invite_id>/",methods=["POST"])
+@app.route("/api/invite/<int:invite_id>/")
 def accept_invite(invite_id):
     invite = Invite.query.filter_by(id=invite_id).first()
     if invite is None:
@@ -181,13 +190,11 @@ def accept_invite(invite_id):
     if invite.accepted:
         return failure_response("Invite already accepted")
     user=get_logged_in_data(request)
-    if user is None or type(user)==str:
+    if user is None or type(user)!=User:
         return failure_response("Invalid session token")
     new_session = invite.create_session(user)
     if new_session is None:
         return failure_response("Authentification mismatch")
-    invite.accepted = True
-    DB.session.commit()
     return success_response(new_session.rserialize())
 
 def extract_token(request):

@@ -145,7 +145,8 @@ class Student(DB.Model):
             "description":self.description,
             "sessions":[a.rserialize() for a in self.sessions],
             "subjects":[s.serialize() for s in self.subjects],
-            "user": self.user.rserialize()
+            "user": self.user.rserialize(),
+            "invites_sent":[i.serialize() for i in self.invites]
 
         }
 
@@ -261,7 +262,7 @@ class Invite(DB.Model):
     def serialize(self):
         return {
             "id":self.id,
-            "sender":[self.sender.serialize()],
+            "sender":[self.sender.rserialize()],
             "receiver":[self.receiver.rserialize()],
             "subject_id": self.subject_id,
             "accepted": self.accepted
@@ -270,6 +271,7 @@ class Invite(DB.Model):
     def rserialize(self):
         return {
             "id":self.id,
+<<<<<<< HEAD
             "sender_id":self.sender.user_id,
             "receiver_id":self.receiver.user_id,
             "subject_id": self.subject_id,
@@ -285,13 +287,20 @@ class Invite(DB.Model):
             "accepted": self.accepted
         }
 
+=======
+            "sender_tid":self.sender_id.user_id,
+            "receiver":self.receiver_id.user_id,
+            "subject": self.subject.name,
+            "accepted": self.accepted
+        }
+>>>>>>> parent of 765a65a (Fixed create and accept invites, added get_invites_by_id)
     def create_session(self,receiver):
         if receiver.email!=self.receiver.user.email:
             return None
         tutor = self.receiver
         student = self.sender
 
-        new_session = TutorSession(student_id=student.id,tutor_id=tutor.id,subject_id=self.subject.id)
+        new_session = TutorSession(student_id=student.id,tutor_id=tutor.id,subject_id=self.subject.id, accepted=True)
         DB.session.add(new_session)
         DB.session.commit()
         return new_session

@@ -1,7 +1,17 @@
-# my-helper
+# my-helper 
+Enabling Cornell students to learn and be tutored by there peers.
+
+## Link to Android Github Repo:
+https://github.com/KennyLiang2302/MyHelper.git
+
+## App Description:
 
 ## API Specification:  
   
+### Tables:  
+The tables in our database include User, Student, Tutor, Subject, TutorSession, Messages, and Invite.
+Moreover, there is an association table called subjects association.
+
 ### Routes:  
 #### GET methods:  
   

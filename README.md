@@ -1,18 +1,21 @@
 # my-helper
 
-API Specification:
-
-Routes:
-GET methods:
-
-Get all users:
+## API Specification:  
+  
+### Routes:  
+#### GET methods:  
+  
+##### Get all users:  
 /api/users/
+```
 {
    "success": <route success>,
    "data": [list of all users]
 }
+```
   
-User data (provided for reference):
+User data (provided for reference):  
+```
 {
    "id": <user id>,
    "netid": <user netid>,
@@ -25,15 +28,19 @@ User data (provided for reference):
    "session_expiration": <session expiration>,
    "update_token": <session expiration>
 }
-
-Get all tutors:
+```
+  
+##### Get all tutors:  
 /api/tutors/
+```
 {
    "success": <route success>,
    "data": [list of tutors]
 }
+```
  
-Tutor data (provided for reference):
+Tutor data (provided for reference):  
+```
 {
      "id": <tutor id>,
      "rating": <tutor integer rating>,
@@ -43,16 +50,19 @@ Tutor data (provided for reference):
      "user": <user corresponding to tutor>,
      "invites": [list of invites for tutoring session]
 }
-
-
-Get all students:
-/api/students/
+```
+  
+##### Get all students:  
+/api/students/  
+```
 {
    "success": <route success>,
    "data": [list of students]
 }
-
-Student data (provided for reference):
+```
+  
+Student data (provided for reference):  
+```
 {
      "id": <student id>,
      "description": <description of student>,
@@ -61,9 +71,11 @@ Student data (provided for reference):
      "user": <corresponding user to student>
      "invites_sent": [invites to tutoring sessions student has sent]
 }
- 
-Get user with user id:
-/api/user/<int:user_id>/
+```
+  
+##### Get user with user id:  
+/api/user/<int:user_id>/  
+```
 {
    "success": <route success>,
    "data": {
@@ -79,12 +91,14 @@ Get user with user id:
        "update_token": <session expiration>
    }
 }
-
-POST Methods:
-
-Register a user:
-/api/register/
-Body:
+```
+  
+#### POST Methods:  
+  
+##### Register a user:  
+/api/register/. 
+Body:  
+```
 {
    "email":<user email>,
    "password":<user password>,
@@ -92,7 +106,9 @@ Body:
    "netid":<user netid>,
    "location":<user location>
 }
-Return:
+```
+Return:  
+```
 {
    "success": <route success>,
    "data": {
@@ -108,15 +124,19 @@ Return:
        "update_token": <session expiration>
    }
 }
+```
   
-Login to account:
-/api/login/
-Body:
+##### Login to account:  
+/api/login/  
+Body:  
+```
 {
    "email":<reigstered email>,
    "password":<registered password>
 }
-Return:
+```
+Return:  
+```
 {
    "success": <route success>,
    "data": {
@@ -132,14 +152,18 @@ Return:
        "update_token": <session expiration>
    }
 }
+```
   
-Make user a student:
-/api/user/<int:user_id>/student/
+##### Make user a student:  
+/api/user/<int:user_id>/student/. 
 Body:
+```
 {
    "description":<student description>
 }
-Return:
+```
+Return:  
+```
 {
     "success":<route success>,
     "data":{
@@ -151,16 +175,19 @@ Return:
        "invites_sent": [invites to tutoring sessions student has sent]
     }
 }
-
-
-Make user a tutor:
-/api/user/<int:user_id>/tutor/
-Body:
+```
+  
+##### Make user a tutor:  
+/api/user/<int:user_id>/tutor/  
+Body:  
+```
 {
    "rating":<tutor rating>,
    "description":<tutor description>
 }
-Return:
+```
+Return:  
+```
 {
     "success":<route success>,
     "data":{
@@ -173,14 +200,18 @@ Return:
        "invites": [list of invites for tutoring session]
     }
 }  
+```
 
-Give user a subject:
-/api/user/<int:user_id>/subject/
-Body:
+##### Give user a subject:  
+/api/user/<int:user_id>/subject/  
+Body:  
+```
 {
    "name":<name of subject>
 }
-Return:
+```
+Return:  
+```
 {
    "success": <route success>,
    "data": {
@@ -188,15 +219,19 @@ Return:
        "name": <subject name>
    }
 }
+```
 
-Send an invite to a tutoring session:
-/api/invite/
-Body:
+##### Send an invite to a tutoring session:  
+/api/invite/  
+Body:  
+```
 {
    "receiver_id":<user id of receiver>,
    "subject_id":<subject to receive tutoring in>
 }
-Return:
+```
+Return:  
+```
 {
      "success": <route success>,
       "data":{
@@ -207,11 +242,14 @@ Return:
             "accepted": <whether the invite has been accepted>
      }
 }
+```
   
-Accept an invite to a tutoring session:
-/api/invite/<int:invite_id>/
-Body:
+##### Accept an invite to a tutoring session:  
+/api/invite/<int:invite_id>/  
+Body:  
+```
 {
   
 }
+```
      

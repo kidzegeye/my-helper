@@ -70,6 +70,16 @@ def get_user_by_id(user_id):
         return failure_response("Given user id is not associated with a user!")
     return success_response(user.serialize())
 
+@app.route("/api/user/invites/<int:user_id>/")
+def get_invites_by_id(user_id):
+    user = User.query.filter_by(id=user_id).first()
+    if user is None:
+        return failure_response("Given user id is not associated with a user!")
+    if user.tutor == []:
+        return failure_response("Given user id is not a tutor")
+    
+    return success_response([i.serialize() for i in user.tutor.invites])
+
 """
 @app.route("/api/users/", methods=["POST"])
 def create_user():
@@ -154,7 +164,7 @@ def create_invite():
     if receiver is None:
         return failure_response("Receiver not found")
 
-    sender=get_logged_in_data()
+    sender=get_logged_in_data(request)
     if sender is None or type(sender)!=User:
         return failure_response("Invalid session token")
     if sender.id==receiver.id:
@@ -179,7 +189,7 @@ def accept_invite(invite_id):
         return failure_response("Invite not found")
     if invite.accepted:
         return failure_response("Invite already accepted")
-    user=get_logged_in_data()
+    user=get_logged_in_data(request)
     if user is None or type(user)!=User:
         return failure_response("Invalid session token")
     new_session = invite.create_session(user)
@@ -255,7 +265,7 @@ def update_session():
 
 
 
-def get_logged_in_data():
+def get_logged_in_data(request):
     success, session_token = extract_token(request)
 
     if not success:

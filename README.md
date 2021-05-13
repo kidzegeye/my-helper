@@ -6,7 +6,7 @@
 #### GET methods:  
   
 ##### Get all users:  
-/api/users/
+###### /api/users/
 ```
 {
    "success": <route success>,
@@ -14,7 +14,7 @@
 }
 ```
   
-User data (provided for reference):  
+###### User data (provided for reference):  
 ```
 {
    "id": <user id>,
@@ -31,7 +31,7 @@ User data (provided for reference):
 ```
   
 ##### Get all tutors:  
-/api/tutors/
+###### /api/tutors/
 ```
 {
    "success": <route success>,
@@ -39,7 +39,7 @@ User data (provided for reference):
 }
 ```
  
-Tutor data (provided for reference):  
+###### Tutor data (provided for reference):  
 ```
 {
      "id": <tutor id>,
@@ -53,7 +53,7 @@ Tutor data (provided for reference):
 ```
   
 ##### Get all students:  
-/api/students/  
+###### /api/students/  
 ```
 {
    "success": <route success>,
@@ -61,7 +61,7 @@ Tutor data (provided for reference):
 }
 ```
   
-Student data (provided for reference):  
+###### Student data (provided for reference):  
 ```
 {
      "id": <student id>,
@@ -74,7 +74,7 @@ Student data (provided for reference):
 ```
   
 ##### Get user with user id:  
-/api/user/<int:user_id>/  
+###### /api/user/<int:user_id>/  
 ```
 {
    "success": <route success>,
@@ -96,8 +96,8 @@ Student data (provided for reference):
 #### POST Methods:  
   
 ##### Register a user:  
-/api/register/. 
-Body:  
+###### /api/register/. 
+###### Body:  
 ```
 {
    "email":<user email>,
@@ -107,7 +107,7 @@ Body:
    "location":<user location>
 }
 ```
-Return:  
+###### Return:  
 ```
 {
    "success": <route success>,
@@ -127,15 +127,15 @@ Return:
 ```
   
 ##### Login to account:  
-/api/login/  
-Body:  
+###### /api/login/  
+###### Body:  
 ```
 {
    "email":<reigstered email>,
    "password":<registered password>
 }
 ```
-Return:  
+###### Return:  
 ```
 {
    "success": <route success>,
@@ -155,14 +155,14 @@ Return:
 ```
   
 ##### Make user a student:  
-/api/user/<int:user_id>/student/. 
-Body:
+###### /api/user/<int:user_id>/student/. 
+###### Body:
 ```
 {
    "description":<student description>
 }
 ```
-Return:  
+###### Return:  
 ```
 {
     "success":<route success>,
@@ -178,15 +178,15 @@ Return:
 ```
   
 ##### Make user a tutor:  
-/api/user/<int:user_id>/tutor/  
-Body:  
+###### /api/user/<int:user_id>/tutor/  
+###### Body:  
 ```
 {
    "rating":<tutor rating>,
    "description":<tutor description>
 }
 ```
-Return:  
+###### Return:  
 ```
 {
     "success":<route success>,
@@ -203,14 +203,14 @@ Return:
 ```
 
 ##### Give user a subject:  
-/api/user/<int:user_id>/subject/  
-Body:  
+###### /api/user/<int:user_id>/subject/  
+###### Body:  
 ```
 {
    "name":<name of subject>
 }
 ```
-Return:  
+###### Return:  
 ```
 {
    "success": <route success>,
@@ -222,15 +222,15 @@ Return:
 ```
 
 ##### Send an invite to a tutoring session:  
-/api/invite/  
-Body:  
+###### /api/invite/  
+###### Body:  
 ```
 {
    "receiver_id":<user id of receiver>,
    "subject_id":<subject to receive tutoring in>
 }
 ```
-Return:  
+###### Return:  
 ```
 {
      "success": <route success>,
@@ -245,8 +245,8 @@ Return:
 ```
   
 ##### Accept an invite to a tutoring session:  
-/api/invite/<int:invite_id>/  
-Body:  
+###### /api/invite/<int:invite_id>/  
+###### Body:  
 ```
 {
   

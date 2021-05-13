@@ -289,7 +289,7 @@ Heroku Server: https://my-helper-appdev.herokuapp.com/
             "id":<invite id>,
             "sender":[list containing the user sender],
             "receiver":[list containing the user receiver],
-            "subject": [list containign the subject],
+            "subject": [list containing the subject],
             "accepted": <whether the invite has been accepted>
      }
 }
@@ -300,7 +300,7 @@ Heroku Server: https://my-helper-appdev.herokuapp.com/
 ###### Body:  
 ```
 {
-   "session":<token of user>
+   "session":[list containing tutor_session data]
 }
 ```
 ###### Return:
@@ -311,8 +311,7 @@ Heroku Server: https://my-helper-appdev.herokuapp.com/
           "id":<tutor_session id>,
           "student_id":<student id>,
           "tutor_id":<tutor id>,
-          "subject": [subject for tutor session],
-          "timestamp": <session time>
+          "subject_id": <subject_id>,
     }
 }
 ```

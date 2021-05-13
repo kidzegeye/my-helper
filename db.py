@@ -156,6 +156,7 @@ class Student(DB.Model):
             "sessions":[a.rserialize() for a in self.sessions],
             "subjects":[s.serialize() for s in self.subjects],
         }
+    
 
 class Subject(DB.Model):
     __tablename__ = "subject"
@@ -278,8 +279,8 @@ class Invite(DB.Model):
     def getinvites_serialize(self):
         return {
             "id":self.id,
-            "sender":[self.sender.rserialize()],
-            "receiver":[self.receiver.rserialize()],
+            "sender":[self.sender.user.rserialize()],
+            "receiver":[self.receiver.user.rserialize()],
             "subject": [self.subject.serialize()],
             "accepted": self.accepted
         }

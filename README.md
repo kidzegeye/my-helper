@@ -5,6 +5,10 @@ Enabling Cornell students to learn from their peers.
 https://github.com/KennyLiang2302/MyHelper.git
 
 ## App Description:
+My Helper enables users to sign up as tutors or students. Students can see a list of available tutors and send requests to tutors for a tutoring
+session. In turn, tutors can see a list of request for tutoring sessions and accept the tutoring sessions that they would like
+to partake in. Our app provides a simple way to allow Cornell students to learn from their surrounding community.
+
 When the user first enters the app, they can choose to login if they have a pre-existing account:  
 
 ![Screenshot (13)](https://user-images.githubusercontent.com/83737905/118168365-c77ab800-b3f5-11eb-83ae-e79e94760016.png)

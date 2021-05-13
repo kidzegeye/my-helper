@@ -252,4 +252,14 @@
   
 }
 ```
+###### Return:  
+```
+{
+    "id":self.id,
+    "sender_tid":self.sender_id.user_id,
+    "receiver":self.receiver_id.user_id,
+    "subject": self.subject.name,
+    "accepted": self.accepted
+}
+```
      

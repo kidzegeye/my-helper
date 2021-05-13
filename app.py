@@ -190,11 +190,8 @@ def accept_invite(invite_id):
     DB.session.commit()
     return success_response(new_session.rserialize())
 
-
-
 def extract_token(request):
-    body=json.loads(request.data)
-    session_token = body.get("session")
+    session_token = request.data.get("session")
     if session_token is None:
         return failure_response("Missing auth header")
 

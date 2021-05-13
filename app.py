@@ -197,8 +197,11 @@ def accept_invite(invite_id):
         return failure_response("Authentification mismatch")
     return success_response(new_session.rserialize())
 
+
+
 def extract_token(request):
-    session_token = request.data.get("session")
+    body=json.loads(request.data)
+    session_token = body.get("session")
     if session_token is None:
         return failure_response("Missing auth header")
 

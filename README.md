@@ -1,5 +1,5 @@
 # my-helper 
-Enabling Cornell students to learn and be tutored by there peers.
+Enabling Cornell students to learn and be tutored by their peers.
 
 ## Link to Android Github Repo:
 https://github.com/KennyLiang2302/MyHelper.git

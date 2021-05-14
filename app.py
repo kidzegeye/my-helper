@@ -188,7 +188,7 @@ def accept_invite(invite_id):
         return failure_response("Authentification mismatch")
     invite.accepted = True
     DB.session.commit()
-    return success_response(new_session.rserialize())
+    return success_response(new_session.rrserialize())
 
 
 

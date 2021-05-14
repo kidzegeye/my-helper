@@ -67,7 +67,7 @@ class User(DB.Model):
             "name":self.name,
             "location":self.location,
             "tutor": [t.rserialize() for t in self.tutor],
-            "student": [s.rserialize() for s in self.student],
+            "student": [s.rserialize() for s in self.student]
         }
 
     def _urlsafe_base_64(self):
@@ -204,7 +204,8 @@ class TutorSession(DB.Model):
             "student":[self.student.serialize()],
             "tutor":[self.tutor.serialize()],
             "subject": [self.subject.serialize()],
-            "timestamp": self.timestamp.strftime("%D %T")
+            "timestamp": self.timestamp.strftime("%D %T"),
+            "session":0
         }
 
     def rserialize(self):
@@ -213,7 +214,18 @@ class TutorSession(DB.Model):
             "student_id":self.student_id,
             "tutor_id":self.tutor_id,
             "subject": [self.subject.serialize()],
-            "timestamp": self.timestamp.strftime("%D %T")
+            "timestamp": self.timestamp.strftime("%D %T"),
+            "session":0
+        }
+    
+    def rrserialize(self):
+        return {
+            "id":self.id,
+            "student":self.student.user.rserialize(),
+            "tutor":self.tutor.user.rserialize(),
+            "subject": [self.subject.serialize()],
+            "timestamp": self.timestamp.strftime("%D %T"),
+            "session":0
         }
 
 class Messages(DB.Model):

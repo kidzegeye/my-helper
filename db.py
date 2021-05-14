@@ -276,7 +276,8 @@ class Invite(DB.Model):
             "sender":[self.sender.serialize()],
             "receiver":[self.receiver.rserialize()],
             "subject_id": self.subject_id,
-            "accepted": self.accepted
+            "accepted": self.accepted,
+            "session":0
         }
 
     def rserialize(self):
@@ -285,7 +286,8 @@ class Invite(DB.Model):
             "sender_id":self.sender.user_id,
             "receiver_id":self.receiver.user_id,
             "subject_id": self.subject_id,
-            "accepted": self.accepted
+            "accepted": self.accepted,
+            "session":0
         }
     
     def getinvites_serialize(self):
@@ -294,7 +296,8 @@ class Invite(DB.Model):
             "sender":[self.sender.user.rserialize()],
             "receiver":[self.receiver.user.rserialize()],
             "subject_id": self.subject_id,
-            "accepted": self.accepted
+            "accepted": self.accepted,
+            "session":0
         }
 
     def create_session(self,receiver):

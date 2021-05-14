@@ -142,6 +142,21 @@ Heroku Server: https://my-helper-appdev.herokuapp.com/
    }
 }
 ```
+
+##### Get invites with user id:  
+###### /api/user/invites/<int:user_id>/
+```
+{
+   "success": <route success>,
+   "data": [{
+       "id": <invite id>,
+       "sender": <sender's user rserialized data>
+       "receiver": <receiver's user rserialized data>
+       "subject_id": <subject id>
+       "accepted": <boolean>
+   },..]
+}
+```
   
 #### POST Methods:  
   
